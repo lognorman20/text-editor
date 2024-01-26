@@ -1,16 +1,18 @@
-use std::io::{self, stdout};
+use std::io::{self, stdout, Write};
 use termion::event::Key;
 use termion::input::TermRead;
 use termion::raw::IntoRawMode;
 
 pub struct Editor {
-    prev_key: Key
+    should_quit: bool,
+    prev_key: Key,
 }
 
 impl Editor {
     pub fn default() -> Self {
-        Self{
-            prev_key: Key::Char('_')
+        Self {
+            should_quit: false,
+            prev_key: Key::Char('_'),
         }
     }
 
@@ -18,9 +20,32 @@ impl Editor {
         let _stdout = stdout().into_raw_mode().unwrap();
 
         loop {
+            if let Err(error) = self.refresh_screen() {
+                die(error);
+            }
+            if self.should_quit {
+                break;
+            }
             if let Err(error) = self.process_keypress() {
                 die(error);
             }
+        }
+    }
+
+    fn refresh_screen(&self) -> Result<(), std::io::Error> {
+        print!("{}{}", termion::clear::All, termion::cursor::Goto(1,1));
+        if self.should_quit {
+            println!("SAY GOODBYE \r");
+        } else {
+            self.draw_rows();
+            print!("{}", termion::cursor::Goto(1,1));
+        }
+        io::stdout().flush()
+    }
+
+    fn draw_rows(&self) {
+        for _ in 0..24 {
+            println!("~\r");
         }
     }
 
@@ -29,11 +54,12 @@ impl Editor {
         match pressed_key {
             Key::Char('q') => {
                 if self.prev_key == Key::Char(':') {
-                    panic!("Program end")
+                    self.should_quit = true;
                 }
-            },
+            }
             _ => {
                 self.prev_key = pressed_key;
+                ()
             }
         }
         Ok(())
@@ -49,5 +75,6 @@ fn read_key() -> Result<Key, std::io::Error> {
 }
 
 fn die(e: std::io::Error) {
+    print!("{}", termion::clear::All);
     panic!("{}", e);
 }
