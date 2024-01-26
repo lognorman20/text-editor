@@ -63,7 +63,10 @@ impl Editor {
             println!("SAY GOODBYE \r");
         } else {
             self.draw_rows();
-            Terminal::cursor_position(&self.cursor_position)
+            Terminal::cursor_position(&Position {
+                x: self.cursor_position.x.saturating_sub(self.offset.x),
+                y: self.cursor_position.y.saturating_sub(self.offset.y),
+            });
         }
         Terminal::cursor_show();
         Terminal::flush()
