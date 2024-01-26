@@ -13,6 +13,10 @@ impl Document {
         Self { rows }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.rows.is_empty()
+    }
+
     pub fn row(&self, index: usize) -> Option<&Row> {
         self.rows.get(index)
     }
