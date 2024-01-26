@@ -3,6 +3,6 @@ mod editor;
 use editor::Editor;
 
 fn main() {
-    let editor = Editor {};
+    let mut editor: Editor = Editor::default();
     editor.run();
 }
