@@ -3,9 +3,15 @@ use termion::event::Key;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+pub struct Position {
+    pub x: usize,
+    pub y: usize,
+}
+
 pub struct Editor {
     terminal: Terminal,
     should_quit: bool,
+    cursor_position: Position,
     prev_key: Key,
 }
 
@@ -14,6 +20,7 @@ impl Editor {
         Self {
             terminal: Terminal::default().expect("Failed to initialize terminal"),
             should_quit: false,
+            cursor_position: Position { x: 0, y: 0 },
             prev_key: Key::Char('_'),
         }
     }
@@ -34,13 +41,13 @@ impl Editor {
 
     fn refresh_screen(&self) -> Result<(), std::io::Error> {
         Terminal::cursor_hide();
-        Terminal::cursor_position(0, 0);
+        Terminal::cursor_position(&Position { x: 0, y: 0 });
         if self.should_quit {
             Terminal::clear_screen();
             println!("SAY GOODBYE \r");
         } else {
             self.draw_rows();
-            print!("{}", termion::cursor::Goto(1, 1));
+            Terminal::cursor_position(&self.cursor_position)
         }
         Terminal::cursor_show();
         Terminal::flush()
@@ -76,13 +83,27 @@ impl Editor {
                 if self.prev_key == Key::Char(':') {
                     self.should_quit = true;
                 }
-            }
+            },
+            Key::Up | Key::Left | Key::Right | Key::Down => self.move_cursor(pressed_key),
             _ => {
                 self.prev_key = pressed_key;
                 ()
             }
         }
         Ok(())
+    }
+
+    fn move_cursor(&mut self, key: Key) {
+        let Position { mut x, mut y } = self.cursor_position;
+        match key {
+            Key::Up => y = y.saturating_sub(1),
+            Key::Down => y = y.saturating_add(1),
+            Key::Left => x = x.saturating_sub(1),
+            Key::Right => x = x.saturating_add(1),
+            _ => ()
+        }
+
+        self.cursor_position = Position { x, y }
     }
 }
 
