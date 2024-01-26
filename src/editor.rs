@@ -1,8 +1,11 @@
+use crate::Document;
+use crate::Row;
 use crate::Terminal;
 use termion::event::Key;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
+#[derive(Default)]
 pub struct Position {
     pub x: usize,
     pub y: usize,
@@ -12,6 +15,7 @@ pub struct Editor {
     terminal: Terminal,
     should_quit: bool,
     cursor_position: Position,
+    document: Document,
     prev_key: Key,
 }
 
@@ -20,7 +24,8 @@ impl Editor {
         Self {
             terminal: Terminal::default().expect("Failed to initialize terminal"),
             should_quit: false,
-            cursor_position: Position { x: 0, y: 0 },
+            cursor_position: Position::default(),
+            document: Document::open(),
             prev_key: Key::Char('_'),
         }
     }
@@ -64,11 +69,20 @@ impl Editor {
         println!("{}\r", welcome_message);
     }
 
+    pub fn draw_row(&self, row: &Row) {
+        let start = 0;
+        let end = self.terminal.get_size().width as usize;
+        let row = row.render(start, end);
+        println!("{}\r", row);
+    }
+
     fn draw_rows(&self) {
         let height = self.terminal.get_size().height;
-        for row in 0..height - 1 {
+        for terminal_row in 0..height - 1 {
             Terminal::clear_current_line();
-            if row == height / 3 {
+            if let Some(row) = self.document.row(terminal_row as usize) {
+                self.draw_row(row);
+            } else if terminal_row == height / 3 {
                 self.draw_welcome_message();
             } else {
                 println!("~\r");
